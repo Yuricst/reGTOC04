@@ -7,6 +7,10 @@ import numpy as np
 import spiceypy as spice
 import pandas as pd
 
+# conversion from km to au
+au2km = 1.49597870691*10**8
+
+
 # conversion between MJD and JD
 def _mjd2jd(mjd):
     """function converts MJD (Modified Julian Date) to JD (Julian Date)
@@ -60,7 +64,7 @@ def propagate_spice(etr_mjd, eldf, MU=1.32712440018*10**11, step=1000, sv_option
                 1st index: number of arrays = number of bodies relative to spacecraft
                 2nd index: rows = timesteps
     Examples:
-        et, sv, dr = propagate_spice(etr_MJD, el_pd1, MU=1.32712440018*10**11, step=steps, sv_option=True, dr_option=True)
+        et, sv, dr, drnorm = propagate_spice(etr_MJD, el_pd1, MU=1.32712440018*10**11, step=steps, sv_option=True, dr_option=True)
     """
     
     # convert time range from MJD to JD
