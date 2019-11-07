@@ -36,32 +36,48 @@ def _jd2mjd(jd):
     return mjd
 
 
-# propagator ... could also make a separate function just to compute dr? or an option?
-def propagate_spice(etr_mjd, eldf, MU=1.32712440018*10**11, step=1000):
+
+def propagate_spice(etr_mjd, eldf, MU=1.32712440018*10**11, step=1000, sv_option=True, dr_option=True):
     """
     SPICE-powered orbit propagator developed for GTOC4
     Args:
         et_MJD (lst): list including start and end time of propagation (in MJD)
         step (float): steps of propagation
         eldf (pandas df): pandas dataframe of orbital elements to be propagated (expect spacecraft to be first row)
+        sv_option (bool): if set to True, compute state-vector
+        dr_option (bool): if set to True, compute relative position vector between object of first row and object of other rows
     Returns:
-        (tuple): state-vector, dr
+        (tuple): time-array [JD], state-vector (if True), relative position vector (if True), and relative position scalar
+            state-vector is 3d numpy array, where:
+                1st index: number of arrays = number of bodies to propagate
+                2nd index: rows = timesteps
+                3rd index: columns = x, y, z, vx, vy, vz
+            relative position vector is also 3d numpy array, where:
+                1st index: number of arrays = number of bodies relative to spacecraft
+                2nd index: rows = timesteps
+                3rd index: columns = dx, dy, dz
+            and relative position salar is 2d numpy array, where: 
+                1st index: number of arrays = number of bodies relative to spacecraft
+                2nd index: rows = timesteps
+    Examples:
+        et, sv, dr = propagate_spice(etr_MJD, el_pd1, MU=1.32712440018*10**11, step=steps, sv_option=True, dr_option=True)
     """
     
-    # 1 astronomical unit [AU] to [km]
-    au2km = 1.49597870691*10**8    
-
     # convert time range from MJD to JD
     etr_jd = _mjd2jd((etr_mjd))
     # create time array
     etrsteps = [x * (etr_jd[1] - etr_jd[0])/step + etr_jd[0] for x in range(step)]
     # store number of bodies to propagate
     [bdy,tmp] = eldf.shape
+    
     # initialize 3d numpy array to store state-vectors
-        # first:  number of arrays = number of bodies to propagate
-        # second: rows = timesteps
-        # third:  columns = x, y, z, vx, vy, vz
-    sv = np.zeros((bdy, step, 6))
+    if sv_option == True:
+        sv = np.zeros((bdy, step, 6))
+        
+    # initialise 3d numpy array to store relative position vector
+    if dr_option == True:
+        dr = np.zeros((bdy-1, step, 3))
+        drnorm = np.zeros((bdy-1, step))
     
     # propagate over time array
     for i in range(step):
@@ -72,11 +88,29 @@ def propagate_spice(etr_mjd, eldf, MU=1.32712440018*10**11, step=1000):
             elts = np.array([rp, eldf.at[j,'e'], np.rad2deg(eldf.at[j,'i']), np.rad2deg(eldf.at[j,'LAN']), np.rad2deg(eldf.at[j,'omega']), np.rad2deg(eldf.at[j,'M0']), _mjd2jd(eldf.at[j,'Epoch']), MU])
             tmp = spice.conics(elts, etrsteps[i])
             
-            # FIXME - store state-vector of one object into sv 3d numpy array
-            for k in range(6):
-                sv[(j,i,k)] = tmp[k]
+            # FIXME - store state-vector of one object
+            if sv_option == True:
+                for k in range(6):
+                    sv[(j,i,k)] = tmp[k]
+                    
+            # store relative state-vector of current object (except if object is the spacecraft ifself)
+            if j == 0:
+                sc_currentpos = np.zeros(3)
+                # store current spacecraft location
+                sc_currentpos[0] = tmp[0]  # state-vector[0]
+                sc_currentpos[1] = tmp[1]  # state-vector[1]
+                sc_currentpos[2] = tmp[2]  # state-vector[2]
+            else:
+                # compute relative vector
+                for l in range(3):
+                    dr[(j-1,i,l)] = tmp[l] - sc_currentpos[l]
+                    drnorm[j-1,i] = np.sqrt( dr[(j-1,i,0)]**2 + dr[(j-1,i,1)]**2 + dr[(j-1,i,2)]**2 )
         
-        #state = spice.conics(elts, etrsteps[i])
     
-    return sv
+    if sv_option == True and dr_option == True:
+        return etrsteps, sv, dr, drnorm
+    elif sv_option == True and dr_option == False:
+        return etrsteps, sv
+    elif sv_option == False and dr_option == True:
+        return etrsteps, dr, drnorm
     
