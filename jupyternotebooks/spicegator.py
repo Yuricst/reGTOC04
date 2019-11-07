@@ -49,7 +49,7 @@ def propagate_spice(etr_mjd, eldf, MU=1.32712440018*10**11, step=1000):
     """
     
     # 1 astronomical unit [AU] to [km]
-   au2km = 1.49597870691*10**8    
+    au2km = 1.49597870691*10**8    
 
     # convert time range from MJD to JD
     etr_jd = _mjd2jd((etr_mjd))
