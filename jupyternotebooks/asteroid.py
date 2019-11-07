@@ -7,7 +7,7 @@ import scipy.optimize as opt
 class Asteroid:
     def __init__(self, name, epoch, a_AU, e, i_deg, LAN_deg, argPeri_deg, meanAnom_deg):
         '''
-        Class defines an asteriod (or earth) using elements.
+        Class defines an asteriod (or Earth) using elements.
         Format agrees with the columns of GTOC4 dataset
         '''
 
