@@ -6,16 +6,18 @@ import scipy.optimize as opt
 
 class Asteroid:
     def __init__(self, name, epoch, a_AU, e, i_deg, LAN_deg, argPeri_deg, meanAnom_deg):
-        '''Class: Define an asteriod (or earth) using elements.
-        Format agrees with the columns of GTOC4 dataset'''
+        '''
+        Class defines an asteriod (or earth) using elements.
+        Format agrees with the columns of GTOC4 dataset
+        '''
 
-        self.mu = 1.32712440018e+11  # km3/s2
-        self.u_AU = 1.29597870691e+8  # km
-        self.u_day = 86400  # seconds
-        self.u_deg2rad = np.pi/180
+        self.mu = 1.32712440018e+11  # gravitational parameter of Sun km3/s2
+        self.u_AU = 1.495978707e+8   # 1 AU in km
+        self.u_day = 86400           # 1 day in seconds
+        self.u_deg2rad = np.pi/180   # conversion from degree to radians
 
         self.name = name
-        self.epoch = epoch  # in MJD
+        self.epoch = epoch           # must be in MJD
         self.a = a_AU*self.u_AU
         self.e = e
         self.i = self.u_deg2rad*i_deg
@@ -43,7 +45,7 @@ class Asteroid:
             (float): mean anomaly, radians (wrapped 0 .. 2 pi)
         '''
 
-        if epoch == self.last_epoch_meanAnom:
+        if epoch == self.last_epoch_meanAnom:  # if epoch is the same, return previous value
             return self.last_meanAnom
         self.last_epoch_meanAnom = epoch
 
@@ -283,9 +285,9 @@ class Asteroid:
         return rp-r
 
     def dist_to_mag(self, other, epoch, **kwargs):
-        '''Returns the magnitude of the distance to the other asteroid
-        Uses the other objects .get_r(epoch) function to get its position
-
+        '''
+        Returns the magnitude of the distance to the other asteroid. 
+        Uses the other objects .get_r(epoch) function to get its position. 
         Args:
             other (Asteroid): other asteroid object
             epoch (float): time, MJD
