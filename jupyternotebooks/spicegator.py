@@ -7,6 +7,9 @@ import numpy as np
 import spiceypy as spice
 import pandas as pd
 
+# 1 astronomical unit [AU] to [km]
+au2km = 1.49597870691*10**8    
+
 # conversion between MJD and JD
 def _mjd2jd(mjd):
     """function converts MJD (Modified Julian Date) to JD (Julian Date)
