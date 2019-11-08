@@ -6,6 +6,7 @@ Function for orbit propagation using SPICE function
 import numpy as np
 import spiceypy as spice
 import pandas as pd
+import time
 
 # conversion from km to au
 au2km = 1.49597870691*10**8
@@ -55,17 +56,21 @@ def propagate_spice(etr_mjd, eldf, MU=1.32712440018*10**11, step=1000, sv_option
             state-vector is 3d numpy array, where:
                 1st index: number of arrays = number of bodies to propagate
                 2nd index: rows = timesteps
-                3rd index: columns = x, y, z, vx, vy, vz
+                3rd index: columns = x, y, z, vx, vy, vz, name of object
             relative position vector is also 3d numpy array, where:
                 1st index: number of arrays = number of bodies relative to spacecraft
                 2nd index: rows = timesteps
-                3rd index: columns = dx, dy, dz
-            and relative position salar is 2d numpy array, where: 
+                3rd index: columns = dx, dy, dz, name of object
+            and relative position salar is 3d numpy array, where: 
                 1st index: number of arrays = number of bodies relative to spacecraft
                 2nd index: rows = timesteps
+                3rd index: name of object
     Examples:
         et, sv, dr, drnorm = propagate_spice(etr_MJD, el_pd1, MU=1.32712440018*10**11, step=steps, sv_option=True, dr_option=True)
     """
+    
+    # measure time at start of program
+    tstart = time.time()
     
     # convert time range from MJD to JD
     etr_jd = _mjd2jd((etr_mjd))
@@ -74,14 +79,14 @@ def propagate_spice(etr_mjd, eldf, MU=1.32712440018*10**11, step=1000, sv_option
     # store number of bodies to propagate
     [bdy,tmp] = eldf.shape
     
-    # initialize 3d numpy array to store state-vectors
+    # initialize 3d numpy array to store state-vectors and object name
     if sv_option == True:
-        sv = np.zeros((bdy, step, 6))
+        sv = np.zeros((bdy, step, 7))
         
-    # initialise 3d numpy array to store relative position vector
+    # initialise 3d numpy array to store relative position vector and object name
     if dr_option == True:
-        dr = np.zeros((bdy-1, step, 3))
-        drnorm = np.zeros((bdy-1, step))
+        dr = np.zeros((bdy-1, step, 4))
+        drnorm = np.zeros((bdy-1, step, 2))
     
     # propagate over time array
     for i in range(step):
@@ -96,20 +101,30 @@ def propagate_spice(etr_mjd, eldf, MU=1.32712440018*10**11, step=1000, sv_option
             if sv_option == True:
                 for k in range(6):
                     sv[(j,i,k)] = tmp[k]
+                sv[j,i,6] = eldf.at[j,'Name']
                     
             # store relative state-vector of current object (except if object is the spacecraft ifself)
-            if j == 0:
-                sc_currentpos = np.zeros(3)
-                # store current spacecraft location
-                sc_currentpos[0] = tmp[0]  # state-vector[0]
-                sc_currentpos[1] = tmp[1]  # state-vector[1]
-                sc_currentpos[2] = tmp[2]  # state-vector[2]
-            else:
-                # compute relative vector
-                for l in range(3):
-                    dr[(j-1,i,l)] = tmp[l] - sc_currentpos[l]
-                    drnorm[j-1,i] = np.sqrt( dr[(j-1,i,0)]**2 + dr[(j-1,i,1)]**2 + dr[(j-1,i,2)]**2 )
-        
+            if dr_option == True:
+                if j == 0:
+                    sc_currentpos = np.zeros(3)
+                    # store current spacecraft location
+                    sc_currentpos[0] = tmp[0]  # state-vector[0]
+                    sc_currentpos[1] = tmp[1]  # state-vector[1]
+                    sc_currentpos[2] = tmp[2]  # state-vector[2]
+                else:
+                    # compute relative vector
+                    for l in range(3):
+                        dr[(j-1,i,l)] = tmp[l] - sc_currentpos[l]
+                    dr[(j-1,i,3)] = eldf.at[j,'Name']
+                    drnorm[(j-1,i,0)] = np.sqrt( dr[(j-1,i,0)]**2 + dr[(j-1,i,1)]**2 + dr[(j-1,i,2)]**2 )
+                    drnorm[(j-1,i,1)] = eldf.at[j,'Name']
+                    
+    # measure time
+    tend = time.time()
+    # computation time
+    dt = tend - tstart
+    # print computational time
+    print(f'Propagation time: {round(dt,2)} [sec]')
     
     if sv_option == True and dr_option == True:
         return etrsteps, sv, dr, drnorm
