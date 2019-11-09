@@ -13,7 +13,7 @@ au2km = 1.49597870691*10**8
 
 
 # conversion between MJD and JD
-def _mjd2jd(mjd):
+def mjd2jd(mjd):
     """function converts MJD (Modified Julian Date) to JD (Julian Date)
     Args:
         mjd (float or lst): float or list of floats of ephemerides in MJD to be converted to JD
@@ -27,14 +27,14 @@ def _mjd2jd(mjd):
     return jd
 
 
-def _jd2mjd(jd):
+def jd2mjd(jd):
     """function converts JD (Julian Date) to MJD (Modified Julian Date)
     Args:
         mjd (float or lst): float or list of floats of ephemerides in JD to be converted to MJD
     Returns:
         (float or float): float or list of ephemeris equivalent in MJD
     """
-    if type(mjd) == list: 
+    if type(jd) == list: 
         mjd = [el - 2400000.5 for el in jd]
     else:
         mjd = jd - 2400000.5
@@ -51,20 +51,20 @@ def propagate_spice(etr_mjd, eldf, MU=1.32712440018*10**11, step=1000, sv_option
         eldf (pandas df): pandas dataframe of orbital elements to be propagated (expect spacecraft to be first row)
         sv_option (bool): if set to True, compute state-vector
         dr_option (bool): if set to True, compute relative position vector between object of first row and object of other rows
+    
     Returns:
         (tuple): time-array [JD], state-vector (if True), relative position vector (if True), and relative position scalar
-            state-vector is 3d numpy array, where:
-                1st index: number of arrays = number of bodies to propagate
-                2nd index: rows = timesteps
-                3rd index: columns = x, y, z, vx, vy, vz, name of object
-            relative position vector is also 3d numpy array, where:
-                1st index: number of arrays = number of bodies relative to spacecraft
-                2nd index: rows = timesteps
-                3rd index: columns = dx, dy, dz, name of object
-            and relative position salar is 3d numpy array, where: 
-                1st index: number of arrays = number of bodies relative to spacecraft
-                2nd index: rows = timesteps
-                3rd index: name of object
+            time-array is a 1D list of Epoch [JD]
+            
+            state-vector is (#of body * step * 7) 3d numpy array
+                (third column: x, y, z, vx, vy, vz, Epoch)
+                
+            relative position vector is (#of body * step * 4) 3d numpy array
+                (third column: dx, dy, dz, Epoch)
+                
+            and relative position salar is (#of body * step * 2) 3d numpy array
+                (third column: dr, Epoch)
+                
     Examples:
         et, sv, dr, drnorm = propagate_spice(etr_MJD, el_pd1, MU=1.32712440018*10**11, step=steps, sv_option=True, dr_option=True)
     """
@@ -73,11 +73,14 @@ def propagate_spice(etr_mjd, eldf, MU=1.32712440018*10**11, step=1000, sv_option
     tstart = time.time()
     
     # convert time range from MJD to JD
-    etr_jd = _mjd2jd((etr_mjd))
+    etr_jd = mjd2jd((etr_mjd))
     # create time array
     etrsteps = [x * (etr_jd[1] - etr_jd[0])/step + etr_jd[0] for x in range(step)]
     # store number of bodies to propagate
     [bdy,tmp] = eldf.shape
+    
+    # FIXME - reattribute indices to inserted pandas df?
+    
     
     # initialize 3d numpy array to store state-vectors and object name
     if sv_option == True:
@@ -94,14 +97,14 @@ def propagate_spice(etr_mjd, eldf, MU=1.32712440018*10**11, step=1000, sv_option
         for j in range(bdy):
             # convert orbital elements to spice-format
             rp = eldf.at[j,'a']*au2km * (1 - eldf.at[j,'e'])
-            elts = np.array([rp, eldf.at[j,'e'], np.rad2deg(eldf.at[j,'i']), np.rad2deg(eldf.at[j,'LAN']), np.rad2deg(eldf.at[j,'omega']), np.rad2deg(eldf.at[j,'M0']), _mjd2jd(eldf.at[j,'Epoch']), MU])
+            elts = np.array([rp, eldf.at[j,'e'], np.rad2deg(eldf.at[j,'i']), np.rad2deg(eldf.at[j,'LAN']), np.rad2deg(eldf.at[j,'omega']), np.rad2deg(eldf.at[j,'M0']), mjd2jd(eldf.at[j,'Epoch']), MU])
             tmp = spice.conics(elts, etrsteps[i])
             
             # FIXME - store state-vector of one object
             if sv_option == True:
                 for k in range(6):
                     sv[(j,i,k)] = tmp[k]
-                sv[j,i,6] = eldf.at[j,'Name']
+                sv[j,i,6] = etrsteps[i]
                     
             # store relative state-vector of current object (except if object is the spacecraft ifself)
             if dr_option == True:
@@ -115,9 +118,9 @@ def propagate_spice(etr_mjd, eldf, MU=1.32712440018*10**11, step=1000, sv_option
                     # compute relative vector
                     for l in range(3):
                         dr[(j-1,i,l)] = tmp[l] - sc_currentpos[l]
-                    dr[(j-1,i,3)] = eldf.at[j,'Name']
+                    dr[(j-1,i,3)] = etrsteps[i]
                     drnorm[(j-1,i,0)] = np.sqrt( dr[(j-1,i,0)]**2 + dr[(j-1,i,1)]**2 + dr[(j-1,i,2)]**2 )
-                    drnorm[(j-1,i,1)] = eldf.at[j,'Name']
+                    drnorm[(j-1,i,1)] = etrsteps[i]
                     
     # measure time
     tend = time.time()
