@@ -51,20 +51,20 @@ def propagate_spice(etr_mjd, eldf, MU=1.32712440018*10**11, step=1000, sv_option
         eldf (pandas df): pandas dataframe of orbital elements to be propagated (expect spacecraft to be first row)
         sv_option (bool): if set to True, compute state-vector
         dr_option (bool): if set to True, compute relative position vector between object of first row and object of other rows
-    
     Returns:
         (tuple): time-array [JD], state-vector (if True), relative position vector (if True), and relative position scalar
-            time-array is a 1D list of Epoch [JD]
-            
-            state-vector is (#of body * step * 7) 3d numpy array
-                (third column: x, y, z, vx, vy, vz, Epoch)
-                
-            relative position vector is (#of body * step * 4) 3d numpy array
-                (third column: dx, dy, dz, Epoch)
-                
-            and relative position salar is (#of body * step * 2) 3d numpy array
-                (third column: dr, Epoch)
-                
+            state-vector is3 d numpy array, where:
+                1st index: number of arrays = number of bodies to propagate
+                2nd index: rows = timesteps
+                3rd index: columns = x, y, z, vx, vy, vz, name of object
+            relative position vector is also 3d numpy array, where:
+                1st index: number of arrays = number of bodies relative to spacecraft
+                2nd index: rows = timesteps
+                3rd index: columns = dx, dy, dz, name of object
+            and relative position salar is 3d numpy array, where: 
+                1st index: number of arrays = number of bodies relative to spacecraft
+                2nd index: rows = timesteps
+                3rd index: name of object
     Examples:
         et, sv, dr, drnorm = propagate_spice(etr_MJD, el_pd1, MU=1.32712440018*10**11, step=steps, sv_option=True, dr_option=True)
     """
@@ -78,9 +78,6 @@ def propagate_spice(etr_mjd, eldf, MU=1.32712440018*10**11, step=1000, sv_option
     etrsteps = [x * (etr_jd[1] - etr_jd[0])/step + etr_jd[0] for x in range(step)]
     # store number of bodies to propagate
     [bdy,tmp] = eldf.shape
-    
-    # FIXME - reattribute indices to inserted pandas df?
-    
     
     # initialize 3d numpy array to store state-vectors and object name
     if sv_option == True:
@@ -104,7 +101,7 @@ def propagate_spice(etr_mjd, eldf, MU=1.32712440018*10**11, step=1000, sv_option
             if sv_option == True:
                 for k in range(6):
                     sv[(j,i,k)] = tmp[k]
-                sv[j,i,6] = etrsteps[i]
+                sv[j,i,6] = eldf.at[j,'Name']
                     
             # store relative state-vector of current object (except if object is the spacecraft ifself)
             if dr_option == True:
@@ -118,9 +115,9 @@ def propagate_spice(etr_mjd, eldf, MU=1.32712440018*10**11, step=1000, sv_option
                     # compute relative vector
                     for l in range(3):
                         dr[(j-1,i,l)] = tmp[l] - sc_currentpos[l]
-                    dr[(j-1,i,3)] = etrsteps[i]
+                    dr[(j-1,i,3)] = eldf.at[j,'Name']
                     drnorm[(j-1,i,0)] = np.sqrt( dr[(j-1,i,0)]**2 + dr[(j-1,i,1)]**2 + dr[(j-1,i,2)]**2 )
-                    drnorm[(j-1,i,1)] = etrsteps[i]
+                    drnorm[(j-1,i,1)] = eldf.at[j,'Name']
                     
     # measure time
     tend = time.time()
