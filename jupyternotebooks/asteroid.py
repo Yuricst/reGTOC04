@@ -5,27 +5,27 @@ import scipy.optimize as opt
 
 
 class Asteroid:
-    def __init__(self, name, epoch, a_AU, e, i_deg, LAN_deg, argPeri_deg, meanAnom_deg):
+    def __init__(self, name, epoch, a_AU, e_mag, i_deg, LAN_deg, argPeri_deg, meanAnom_deg):
         '''
         Class defines an asteriod (or earth) using elements.
         Format agrees with the columns of GTOC4 dataset
         '''
 
         self.mu = 1.32712440018e+11  # gravitational parameter of Sun km3/s2
-        self.u_AU = 1.495978707e+8   # 1 AU in km
+        self.u_AU = 1.4959780691e+8   # 1 AU in km
         self.u_day = 86400           # 1 day in seconds
         self.u_deg2rad = np.pi/180   # conversion from degree to radians
 
-        self.name = name
+        self.name = 'Asteroid ' + name
         self.epoch = epoch           # must be in MJD
         self.a = a_AU*self.u_AU
-        self.e = e
+        self.e_mag = e_mag
         self.i = self.u_deg2rad*i_deg
         self.LAN = self.u_deg2rad*LAN_deg
         self.omega = self.u_deg2rad*argPeri_deg
         self.M0 = self.u_deg2rad*meanAnom_deg
 
-        self.elements = (self.epoch, self.a, self.e, self.i, self.LAN, self.omega, self.M0)
+        #self.elements = (self.epoch, self.a, self.e_mag, self.i, self.LAN, self.omega, self.M0)
 
         # cache the last calculated results
         self.last_epoch_meanAnom = None
@@ -73,19 +73,19 @@ class Asteroid:
 
         self.last_epoch_eccAnom = epoch
 
-        def root_eccAnom(eccAnom, meanAnom, ecc):
+        def residue_eccAnom(eccAnom, meanAnom, ecc):
             '''Returns the error in Kepler's equation, and its first and second derivatives'''
-
+            # meanAnom == eccAnom - ecc*np.sin(eccAnom)
             error = eccAnom - ecc*np.sin(eccAnom) - meanAnom
             deriv = 1 - ecc*np.cos(eccAnom)
-            deriv2 = ecc*np.sin(eccAnom)
+            deriv2 =    ecc*np.sin(eccAnom)
             return error, deriv, deriv2
 
         # calculate mean anom
         meanAnom = self.get_meanAnom(epoch)
 
         # solve for true anom
-        sol = opt.root_scalar(root_eccAnom, args=(meanAnom, self.e), bracket=(
+        sol = opt.root_scalar(residue_eccAnom, args=(meanAnom, self.e_mag), bracket=(
             0, 2*np.pi), fprime2=True, method=method, **kwargs)
 
         if sol.converged:
@@ -114,9 +114,9 @@ class Asteroid:
 
         eccAnom = self.get_eccAnom(epoch, **kwargs)
 
-        e = self.e
+        e_mag = self.e_mag
 
-        trueAnom = (np.arctan((1/np.sqrt((1-e)/(1+e))) * np.tan(eccAnom/2))) % 2*np.pi
+        trueAnom = (2*np.arctan((np.sqrt((1+e_mag)/(1-e_mag))) * np.tan(eccAnom/2))) % 2*np.pi
 
         self.last_trueAnom = trueAnom
 
@@ -141,7 +141,7 @@ class Asteroid:
         if trueAnom is None:
             trueAnom = self.get_trueAnom(epoch, **kwargs)
 
-        r_mag = self.a*(1-self.e**2)/(1+self.e*np.cos(trueAnom))
+        r_mag = self.a*(1-self.e_mag**2)/(1+self.e_mag*np.cos(trueAnom))
 
         self.last_r_mag = r_mag
 
@@ -166,7 +166,7 @@ class Asteroid:
         if trueAnom is None:
             trueAnom = self.get_trueAnom(epoch, **kwargs)
 
-        gamma = np.arctan((self.e*np.sin(trueAnom))/(1+self.e*np.cos(trueAnom)))
+        gamma = np.arctan((self.e_mag*np.sin(trueAnom))/(1+self.e_mag*np.cos(trueAnom)))
 
         self.last_gamma = gamma
 
@@ -250,7 +250,7 @@ class Asteroid:
         if trueAnom is None:
             trueAnom = self.get_trueAnom(epoch, **kwargs)
 
-        v = sef.get_v_mag(epoch, trueAnom)
+        v = self.get_v_mag(epoch, trueAnom)
 
         gamma = self.get_gamma(epoch, trueAnom)
 
@@ -266,6 +266,21 @@ class Asteroid:
         self.last_v = v_vec
 
         return v_vec
+
+    def get_rv(self, epoch):
+
+        '''Return the r and v as a state vector
+
+        Args:
+            epoch (float): time, MJD
+
+        Returns:
+            (tuple): r, v
+
+        '''
+
+        return self.get_r(epoch), self.get_v(epoch)
+
 
     def dist_to(self, other, epoch, **kwargs):
         '''Returns distance vector to the other asteroid.
@@ -286,8 +301,8 @@ class Asteroid:
 
     def dist_to_mag(self, other, epoch, **kwargs):
         '''
-        Returns the magnitude of the distance to the other asteroid. 
-        Uses the other objects .get_r(epoch) function to get its position. 
+        Returns the magnitude of the distance to the other asteroid.
+        Uses the other objects .get_r(epoch) function to get its position.
         Args:
             other (Asteroid): other asteroid object
             epoch (float): time, MJD
@@ -305,10 +320,10 @@ class Asteroid:
             (str): asteroid details
         '''
 
-        out = f'*Asteroid {self.name}*'
+        out = f'*{self.name}*'
         out += f'\n  Epoch0 (MJD)  : {self.epoch}'
         out += f'\n  a (AU)        : {self.a/self.u_AU}'
-        out += f'\n  e (deg)       : {self.e/self.u_deg2rad}'
+        out += f'\n  e_mag         : {self.e_mag}'
         out += f'\n  i (deg)       : {self.i/self.u_deg2rad}'
         out += f'\n  LAN (deg)     : {self.LAN/self.u_deg2rad}'
         out += f'\n  argPeri (deg) : {self.omega/self.u_deg2rad}'
@@ -318,6 +333,6 @@ class Asteroid:
 
     def __repr__(self):
 
-        out = f'Asteroid {self.name}'
+        out = f'{self.name}'
 
         return out
