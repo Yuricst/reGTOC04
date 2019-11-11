@@ -62,7 +62,7 @@ def _y_538(r1,r2,A,z):
     return y
 
 # Lambert solver
-def lambert(r1, r2, tof, mu, grade='pro', method=None, **kwargs):
+def lambert(mu, r1, r2, tof, grade='pro', method=None, **kwargs):
     """
     Function takes in classic parameters to Lambert problem to determine orbitalelements
     Args:
