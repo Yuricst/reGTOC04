@@ -73,9 +73,9 @@ class Asteroid:
 
         self.last_epoch_eccAnom = epoch
 
-        def root_eccAnom(eccAnom, meanAnom, ecc):
+        def residue_eccAnom(eccAnom, meanAnom, ecc):
             '''Returns the error in Kepler's equation, and its first and second derivatives'''
-
+            # meanAnom == eccAnom - ecc*np.sin(eccAnom)
             error = eccAnom - ecc*np.sin(eccAnom) - meanAnom
             deriv = 1 - ecc*np.cos(eccAnom)
             deriv2 = ecc*np.sin(eccAnom)
@@ -85,7 +85,7 @@ class Asteroid:
         meanAnom = self.get_meanAnom(epoch)
 
         # solve for true anom
-        sol = opt.root_scalar(root_eccAnom, args=(meanAnom, self.e), bracket=(
+        sol = opt.root_scalar(residue_eccAnom, args=(meanAnom, self.e), bracket=(
             0, 2*np.pi), fprime2=True, method=method, **kwargs)
 
         if sol.converged:
@@ -286,8 +286,8 @@ class Asteroid:
 
     def dist_to_mag(self, other, epoch, **kwargs):
         '''
-        Returns the magnitude of the distance to the other asteroid. 
-        Uses the other objects .get_r(epoch) function to get its position. 
+        Returns the magnitude of the distance to the other asteroid.
+        Uses the other objects .get_r(epoch) function to get its position.
         Args:
             other (Asteroid): other asteroid object
             epoch (float): time, MJD
