@@ -1,4 +1,4 @@
-"""Asteroid class with GTOC definitions"""
+"""Asteroid class with GTOC definitions, incorporating SPICE method as a supplementary option"""
 import numpy as np
 import scipy as sp
 import pandas as pd
