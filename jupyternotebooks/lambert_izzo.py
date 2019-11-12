@@ -4,27 +4,63 @@ from numpy import cross
 import logging
 from scipy.special import hyp2f1
 
-def lambert(mu, r1, r2, tof, M=0, numiter=35, rtol=1e-8, short=True):
+# Implementation of Izzo's algo for solving lamberts problem
 
-    #simple wrapper to only return a single solution
+def lambert(mu, r1, r2, tof, M=0, numiter=35, rtol=1e-8, return_="short"):
+
+    '''Solves Lambert's problem
+
+    Args:
+        mu (float): gravitional constant km3/s2
+        r1 (np.array): initial position vector
+        r2 (np.array): final position vector
+        tof (float): time of flight (seconds)
+        M (int): number of complete revolutions
+        numiter (int): maximum number of iterations in solver
+        rtol (float): tolerance of solver
+        return_ (str): type of solution to be returned (see note)
+
+    Returns:
+        if return_ is 'short' or 'long':
+            (tuple): (v1, v2), initial and final velocities as np.array
+        if return_ is 'all':
+            (list): list of all possible initial and final velocities for this trajectory
+
+    '''
 
     sols = list(izzo(mu, r1, r2, tof, M, numiter, rtol))
 
-    if short:
+    if return_ == 'short':
         return sols[0]
-    else:
+    elif return_ == 'long':
         return sols[-1]
+    elif return_ == 'all':
+        return sols
 
+    return ValueError("return_ must be either 'short', 'long' or 'all'.")
 
 
 def izzo(mu, r1, r2, tof, M, numiter, rtol):
-    '''Solves lamberts problem using izzo, adapting implementation from poliastro'''
+    '''Solves lamberts problem using izzo, adapting implementation from poliastro.
 
+    Args:
+        mu (float): gravitional constant km3/s2
+        r1 (np.array): initial position vector
+        r2 (np.array): final position vector
+        tof (float): time of flight (seconds)
+        M (int): number of complete revolutions
+        numiter (int): maximum number of iterations in solver
+        rtol (float): tolerance of solver
+
+    Yields:
+        (tuple): (v1, v2) initial and final velocities
+
+    '''
     assert tof > 0
     assert mu > 0
 
     # check collinearity
-    if np.all(cross(r1,r2)) == 0:
+    if np.all(cross(r1,r2) == 0):
         raise ValueError('Lamberts cant be solved for collinear vectors')
 
     # chord
@@ -147,6 +183,8 @@ def _initial_guess(T, ll, M):
 
 def _householder(p0, T0, ll, M, tol, maxiter):
 
+    ''' Root finding using householder algo'''
+
     for ii in range(maxiter):
         y = _compute_y(p0, ll)
 
@@ -167,6 +205,8 @@ def _householder(p0, T0, ll, M, tol, maxiter):
     raise RuntimeError('Failed to converge')
 
 def _tof_equation_y(x, y, T0, ll, M):
+
+    '''calculate time of flight'''
 
     if M == 0 and np.sqrt(0.6) < x < np.sqrt(1.4):
         eta = y - ll * x
