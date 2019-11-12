@@ -12,7 +12,7 @@ class Satellite(Asteroid):
     def __init__(self):
 
         self.mu = 1.32712440018e+11  # gravitational parameter of Sun km3/s2
-        self.u_AU = 1.4959780691e+8   # 1 AU in km
+        self.u_AU = 1.4959780691e+8  # 1 AU in km
         self.u_day = 86400           # 1 day in seconds
         self.u_deg2rad = np.pi/180   # conversion from degree to radians
 
@@ -44,6 +44,7 @@ class Satellite(Asteroid):
 
         return self.epoch, self.r, self.v
 
+
     def set_state(self, epoch, r, v, add_to_hist=False):
 
         self.epoch = epoch
@@ -52,6 +53,7 @@ class Satellite(Asteroid):
 
         # also update all orb elements
         self.set_orb_elements(self.epoch, self.r, self.v)
+
 
     def set_orb_elements(self, epoch, r, v):
 
@@ -94,13 +96,26 @@ class Satellite(Asteroid):
         else:
             theta = 2*np.pi - np.arccos(np.dot(e,r)/(e_mag*norm(r)))
 
-        theta =  theta % (2*np.pi)
+        theta = theta % (2*np.pi)
 
         self.theta = theta
 
-        # calculate ecc anomaly
+        # ecc anomaly
+        if e_mag < 0:         # elliptical case
+            self.eccAnom = eccAnom = (2*np.arctan(np.sqrt((1-e_mag)/(1+e_mag))*np.tan(theta/2))) % (2*np.pi)   #FIXME - why 2 equal signs?
 
-        self.eccAnom = eccAnom = (2*np.arctan(np.sqrt((1-e_mag)/(1+e_mag))*np.tan(theta/2))) % (2*np.pi)
+        elif e_mag == 1:       # parabolic case (E = theta)
+            self.eccAnom = self.theta
 
-        # calculate mean anom
-        self.M0 = (eccAnom - e_mag*np.sin(eccAnom)) % (2*np.pi)
+        else:                 # hyperbolic case (e_mag > 1)
+            self.eccAnom = (2*np.arctan(np.sqrt((e_mag-1)/(e_mag+1))*np.tan(theta/2))) % (2*np.pi)
+
+        # mean anom
+        if e_mag < 0:         # elliptical case
+            self.M0 = (eccAnom - e_mag*np.sin(eccAnom)) % (2*np.pi)
+
+        elif e_mag == 1:       # parabolic case
+            self.M0 = 0.5*np.tan(theta/2) + (1/6)*np.tan(theta/2)**3
+        else:                 # hyperbolic case (e_mag > 1)
+            self.M0 = e_mag*np.sinh(eccAnom) - eccAnom
+
