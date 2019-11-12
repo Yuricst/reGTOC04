@@ -39,6 +39,7 @@ class Asteroid:
         self.last_epoch_r = None
         self.last_epoch_v = None
 
+
     def get_meanAnom(self, epoch):
         '''function returns mean anomaly
         Args:
@@ -58,6 +59,7 @@ class Asteroid:
         self.last_meanAnom = meanAnom
 
         return meanAnom
+
 
     def get_eccAnom(self, epoch, method=None, **kwargs):
         ''' Function calculates the eccentric anomaly. Uses scipy.optimize.root_scalar internally.
@@ -101,6 +103,7 @@ class Asteroid:
             self.last_eccAnom = sol
 
             raise RuntimeError('Eccentric anomaly calculation failed:')
+
 
     def get_trueAnom(self, epoch, **kwargs):
         '''Returns true anomaly at epoch.
@@ -149,6 +152,7 @@ class Asteroid:
 
         return r_mag
 
+
     def get_gamma(self, epoch, trueAnom=None, **kwargs):
         '''Returns flight path angle gamma.
         If only epoch is provided, trueAnom is calculated.
@@ -174,6 +178,7 @@ class Asteroid:
 
         return gamma
 
+
     def get_v_mag(self, epoch, trueAnom=None, **kwargs):
         '''Returns helio-centric speed of asteroid.
         If only epoch is provided, trueAnom is calculated.
@@ -197,6 +202,7 @@ class Asteroid:
         self.last_v_mag = v
 
         return v
+
 
     def get_r(self, epoch, trueAnom=None, **kwargs):
         '''Returns position vector relative to Sun.
@@ -231,6 +237,7 @@ class Asteroid:
         self.last_r = r_vec
 
         return r_vec
+
 
     def get_v(self, epoch, trueAnom=None, **kwargs):
         '''Returns heliocentric velocity vector.
@@ -269,6 +276,7 @@ class Asteroid:
 
         return v_vec
 
+
     def get_rv(self, epoch):
 
         '''Return the r and v as a state vector
@@ -282,6 +290,31 @@ class Asteroid:
         '''
 
         return self.get_r(epoch), self.get_v(epoch)
+
+
+    def get_rv_spice(self, epoch):
+        '''returns state-vector using SPICE function at input epoch [MJD]'''
+
+        # convert epoch from MJD to JD for handling in SPICE
+        epoch_JD = epoch + 2400000.5
+
+        # compute periapsis
+        rp = self.a * (1 - self.e)
+
+        # compute mean anomaly at input epoch
+        M0_current = self.get_meanAnom(epoch_JD)
+
+        # insert orbital elements into array
+        elements_array = [rp, self.e, self.i, self.LAN, self.omega, M0_current, epoch_JD, self.mu]
+
+        # compute orbital elements
+        state_vec = spice.conics(elements_array, epoch_JD)
+
+        # prepare outputs
+        r_vec_spice = state_vec[:len(state_vec)//2]
+        v_vec_spice = state_vec[len(state_vec)//2:]
+
+        return r_vec_spice, v_vec_spice
 
 
     def dist_to(self, other, epoch, **kwargs):
@@ -315,6 +348,7 @@ class Asteroid:
         dr = self.dist_to(other, epoch, **kwargs)
 
         return np.linalg.norm(dr)
+
 
     def details(self):
         '''String output of orbital elements of the asteroid

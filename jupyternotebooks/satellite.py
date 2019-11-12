@@ -5,6 +5,8 @@ import scipy.optimize as opt
 from numpy import linalg as linalg
 from numpy.linalg import norm
 
+import spiceypy as spice
+
 from asteroid import Asteroid
 
 class Satellite(Asteroid):
@@ -40,12 +42,14 @@ class Satellite(Asteroid):
         self.last_epoch_r = None
         self.last_epoch_v = None
 
+
     def get_state(self):
 
         return self.epoch, self.r, self.v
 
 
     def set_state(self, epoch, r, v, add_to_hist=False):
+        """set state-vector of satellite"""
 
         self.epoch = epoch
         self.r  = r
@@ -118,4 +122,7 @@ class Satellite(Asteroid):
             self.M0 = 0.5*np.tan(theta/2) + (1/6)*np.tan(theta/2)**3
         else:                 # hyperbolic case (e_mag > 1)
             self.M0 = e_mag*np.sinh(eccAnom) - eccAnom
+
+
+
 
