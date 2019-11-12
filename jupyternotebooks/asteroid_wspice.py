@@ -3,6 +3,7 @@ import numpy as np
 import scipy as sp
 import pandas as pd
 import scipy.optimize as opt
+import spiceypy as spice
 
 
 class Asteroid:
