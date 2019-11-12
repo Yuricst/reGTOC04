@@ -299,13 +299,13 @@ class Asteroid:
         epoch_JD = epoch + 2400000.5
 
         # compute periapsis
-        rp = self.a * (1 - self.e)
+        rp = self.a * (1 - self.e_mag)
 
         # compute mean anomaly at input epoch
         M0_current = self.get_meanAnom(epoch_JD)
 
         # insert orbital elements into array
-        elements_array = [rp, self.e, self.i, self.LAN, self.omega, M0_current, epoch_JD, self.mu]
+        elements_array = [rp, self.e_mag, self.i, self.LAN, self.omega, M0_current, epoch_JD, self.mu]
 
         # compute orbital elements
         state_vec = spice.conics(elements_array, epoch_JD)
