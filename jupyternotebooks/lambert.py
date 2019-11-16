@@ -3,9 +3,12 @@
 
 
 import numpy as np
+import logging
 import scipy.optimize as opt
 from numpy.linalg import norm
-import logging
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import axes3d
+
 
 #levels: debug, info, warning, error, critical
 
@@ -173,3 +176,155 @@ def lambert(mu, r1, r2, tof, grade='pro', method=None, **kwargs):
     logging.info(f'velocity at r2: {v2} [km/s]')
     logging.info('================================================================')
     return v1, v2
+
+
+def sv2el(r,v,mu):
+    """function converts state-vector to orbital elements
+        Args:
+        r (lst): position vector [km]
+        v (lst): velocity vector [km]
+        mu (float): gravitational parameter [km^3/s^2]
+    Returns:
+        (tuple): tuple of orbital elements
+    """
+    # specific angular momentum vector
+    h_vect = np.cross(r,v)
+    h = norm(h_vect)  # scalar quantity
+    
+    # inclination vector
+    i = np.arccos(h_vect[2]/h)
+
+    # eccentricity vector
+    e_vect = np.cross(v,h_vect)/mu - r/norm(r)
+    e = norm(e_vect)
+
+    # semi-major axis (negative for hyperbolic trajectory)    
+    a = h**2/(mu*(1-e**2))
+
+    # right-ascension
+    K = [0,0,1] # define K-axis
+    N = np.cross(K,h_vect)
+    if N[1] > 0:
+        RAAN = np.arccos(N[0]/norm(N)) # [rad]
+    else:
+        RAAN = 2*np.pi - np.arccos(N[0]/norm(N)) # [rad]
+
+    # argument of periapsis
+    if e_vect[2] > 0:
+        omega = np.arccos(np.dot(e_vect,N)/(e*norm(N)))
+    else:
+        omega = 2*np.pi - np.arccos(np.dot(e_vect,N)/(e*norm(N)))
+
+    # true anomaly
+    v_radial = np.dot(v,r)/norm(r)
+    if v_radial > 0:
+        theta = np.arccos(np.dot(e_vect,r)/(e*norm(r)))
+    else:
+        theta = 2*np.pi - np.arccos(np.dot(e_vect,r)/(e*norm(r)))
+
+    # prepare output
+    elements = {'i':i, 'h':h, 'e':e,'a':a,'RAAN':RAAN,'omega':omega,'theta':theta}
+    return elements
+
+
+def plot_transfer(r1,v1,r2,v2,mu):
+    """Function plots transfer orbits resulting from solving Lambert's problem
+    Args:
+        r1 (lst): initial position vector [km]
+        v1 (lst): initial velocity vector [km]
+        r2 (lst): final position vector [km/s]
+        v2 (lst): final velocity vector [km/s]
+        mu (float): gravitational parameter [km^3/s^2]
+    Returns:
+        (tuple): tupple of position vector and a 3D plot of transfer
+    """
+    # fetch orbital elements at initial and final positions
+    el1 = sv2el(r1,v1,mu)
+    el2 = sv2el(r2,v2,mu)
+
+    # define plotting step-size
+    n = 200
+
+    # create array of theta
+    if el2.get('theta') > el1.get('theta'):
+        theta_range = np.linspace(el1.get('theta'),el2.get('theta'),n)
+    else:
+        theta_range = np.linspace(el2.get('theta'),el1.get('theta'),n)
+
+    # initialize position vector arrays
+    r_PF = np.zeros((3,n))
+    r_GEC = np.zeros((3,n))
+    # compute perifocal and GEC positions
+    for i in range(n):
+        tmpPF1 = el1.get('h')**2/(mu*(1 + el1.get('e')*np.cos(theta_range[i]))) * np.array([[np.cos(theta_range[i]), np.sin(theta_range[i]), 0]])
+        tmpPF1 = np.transpose(tmpPF1)
+        tmpPF2 = np.dot(rotMat(-el2.get('omega'),3), tmpPF1)
+        tmpPF3 = np.dot(rotMat(-el2.get('i'),1),  tmpPF2)
+        tmpGEC = np.dot(rotMat(-el2.get('RAAN'),3), tmpPF3)
+
+        # store computed values
+        for j in range(3):
+            r_PF[j,i]  = tmpPF1[j]
+            r_GEC[j,i] = tmpGEC[j]
+
+    # plot in perifocal frame
+    fig = plt.figure(figsize=(4, 4))
+    ax = fig.add_subplot()
+    plt.plot(r_PF[0,:], r_PF[1,:],'-')
+    if el2.get('theta') > el1.get('theta'):
+        plt.plot(r_PF[0,0],r_PF[1,0],'xb', label='initial position')
+        plt.plot(r_PF[0,n-1],r_PF[1,n-1],'^r', label='final position')
+    else:
+        plt.plot(r_PF[0,n-1],r_PF[1,n-1],'xb', label='initial position')
+        plt.plot(r_PF[0,0],r_PF[1,0],'^r', label='final position')
+    plt.title('Lambert transfer in perifocal frame')
+    plt.xlabel('x [km]')
+    plt.ylabel('y [km]')
+    plt.legend()
+    plt.show()
+    # plot in GEC frame
+    fig = plt.figure(figsize=(6, 6))
+    ax = fig.add_subplot(111, projection='3d')
+    ax.plot(r_GEC[0,:],r_GEC[1,:],r_GEC[2,:]) #,'-')#, c='b', label='Earth',s=16)
+    if el2.get('theta') > el1.get('theta'):
+        ax.scatter(r_GEC[0,0],r_GEC[1,0],r_GEC[2,0],c='b',m='x', label='initial position')
+        ax.scatter(r_GEC[0,n-1],r_GEC[1,n-1],r_GEC[2,n-1],c='r', label='final position')
+    else:
+        ax.scatter(r_GEC[0,n-1],r_GEC[1,n-1],r_GEC[2,n-1],c='b', label='initial position')
+        ax.scatter(r_GEC[0,0],r_GEC[1,0],r_GEC[2,0],c='r', label='final position')
+    plt.title('Lambert transfer in center-body-intertial frame')
+    ax.set_xlabel('x [km]')
+    ax.set_ylabel('y [km]')
+    ax.set_zlabel('z [km]')
+    ax.legend()
+    plt.show()
+
+
+    return r_PF, r_GEC
+
+
+def rotMat(phi,axis):
+    """Rotational matrix
+    Args:
+        phi (float): rotation angle in radians
+        axis (int): rotation axis 1, 2, or 3
+    Returns:
+        (matrix): 3x3 rotational matrix
+    """
+    if axis == 1:
+        rotM = np.array([[1, 0, 0],
+            [0, np.cos(phi), np.sin(phi)],
+            [0, -np.sin(phi),np.cos(phi)]]) 
+    elif axis == 2:
+        rotM = np.array([[np.cos(phi), 0, -np.sin(phi)],
+            [0, 1, 0],
+            [np.sin(phi), 0, np.cos(phi)]]) 
+    elif axis == 3:
+        rotM = np.array([[np.cos(phi), np.sin(phi), 0],
+            [-np.sin(phi),np.cos(phi), 0],
+            [0, 0, 1]]) 
+    else:
+        raise RuntimeError('rotation matrix axis must be 1, 2, or 3')
+
+    return rotM
+

@@ -44,7 +44,7 @@ def jd2mjd(jd):
 
 def propagate_spice(etr_mjd, eldf, MU=1.32712440018*10**11, step=1000, sv_option=True, dr_option=True):
     """
-    SPICE-powered orbit propagator developed for GTOC4
+    SPICE-based orbit propagator developed for GTOC4
     Args:
         et_MJD (lst): list including start and end time of propagation (in MJD)
         step (float): steps of propagation
@@ -133,3 +133,4 @@ def propagate_spice(etr_mjd, eldf, MU=1.32712440018*10**11, step=1000, sv_option
     elif sv_option == False and dr_option == True:
         return etrsteps, dr, drnorm
     
+
