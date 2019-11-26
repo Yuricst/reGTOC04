@@ -4,6 +4,7 @@ import pandas as pd
 import scipy.optimize as opt
 from numpy import linalg as linalg
 from numpy.linalg import norm
+from numpy import cross, pi
 
 import spiceypy as spice
 
@@ -57,6 +58,7 @@ class Satellite(Asteroid):
 
         # also update all orb elements
         self.set_orb_elements(self.epoch, self.r, self.v)
+
 
 
     def set_orb_elements(self, epoch, r, v):
@@ -122,7 +124,3 @@ class Satellite(Asteroid):
             self.M0 = 0.5*np.tan(theta/2) + (1/6)*np.tan(theta/2)**3
         else:                 # hyperbolic case (e_mag > 1)
             self.M0 = e_mag*np.sinh(eccAnom) - eccAnom
-
-
-
-
