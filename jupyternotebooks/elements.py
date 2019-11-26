@@ -18,7 +18,8 @@ def angle_between(a, b):
 
 
 def rv2coe(mu, r, v, tol=1e-12):
-    """Short summary.
+    """state vector to classical orbital elements, follows derivation by Curtis. 
+    Distinction of cases is made for equatorial and circular cases explicitly
 
     Args:
         mu (float): Gravitational Parameter (km3/s2).
@@ -105,6 +106,7 @@ def rv2coe(mu, r, v, tol=1e-12):
 
 
 def coe2rv(mu, h, e, LAN, inc, argp, trueAnom):
+    """Converts classical orbital elements to state vector"""
 
     # define basis vectors
     u1 = np.array([1,0,0])

@@ -1,4 +1,4 @@
-# Formulation follows Curtis Chapter 5.3 Lambert's Problem pg.247-
+"""Lambert problem solution according to Bate's formulation"""
 # Python implementation by Yuri Shimane
 
 
@@ -143,7 +143,7 @@ def lambert(mu, r1, r2, tof, grade='pro', method=None, **kwargs):
             F0, Fdot0 = residue_Fz(z0,r1,r2,A)
 
     logging.debug(f'Scipy will use {z0} as z0 initial guess')
-    
+
     # Scipy - solve to find z-value
     #sol = opt.root_scalar(residue_Fz, args=(r1,r2,A), fprime=True, bracket=bracket_window, method=method, **kwargs)
     sol = opt.root_scalar(residue_Fz, args=(r1,r2,A), fprime=True, x0=z0, method=method, **kwargs)
@@ -176,6 +176,7 @@ def lambert(mu, r1, r2, tof, grade='pro', method=None, **kwargs):
     logging.info(f'velocity at r2: {v2} [km/s]')
     logging.info('================================================================')
     return v1, v2
+    
 
 
 def sv2el(r,v,mu):
@@ -282,6 +283,7 @@ def plot_transfer(r1,v1,r2,v2,mu):
     plt.ylabel('y [km]')
     plt.legend()
     plt.show()
+
     # plot in GEC frame
     fig = plt.figure(figsize=(6, 6))
     ax = fig.add_subplot(111, projection='3d')

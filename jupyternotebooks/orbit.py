@@ -110,7 +110,7 @@ class Orbit():
 
         else:
             # close to a parabolic trajectory
-            p = np.dot(self.h,self.h) / self.mu #semi-latus rectum, parameter of orbit
+            p = np.dot(self.h,self.h) / self.mu  # semi-latus rectum, parameter of orbit
             q = p * np.abs(1.0 - self.e) / np.abs(1.0 - self.e ** 2)
             # mean motion n = sqrt(mu / 2 q^3) for parabolic orbit
             meanAnom = self.meanAnom0 + tof * np.sqrt(self.mu / 2.0 / (q ** 3))
@@ -127,7 +127,7 @@ class Orbit():
     def details(self):
 
         s = f"Orbit: {self.name}"
-        s += f"\n Epoch     : {self.epoch0}"
+        s += f"\n Epoch     :  {self.epoch0}"
         s += f"\n a         :  {self.a/AU2km:.8f} AU"
         s += f"\n e         :  {self.e:.8f}"
         s += f"\n inc       :  {self.inc*180/pi:.8f} deg"
@@ -141,7 +141,14 @@ class Orbit():
 
         return s
 
-    def plot(self, start=None, end=None, num=50):
+    def plot(self, start=None, end=None, dim=2, num=100):
+        """plots orbit in 2D between start and end time, with num points
+        Args:
+            start (float): start epoch of orbit to be plotted
+            end (float): end epoch of orbit to be plotted
+            dim (int): dimension of plot (either 2D or 2D)
+            num (int): number of points to construct the orbit
+        """
 
         if start is None:
             start = self.epoch0
@@ -163,5 +170,16 @@ class Orbit():
             r = r/AU2km
             rx[i], ry[i], rz[i] = r
 
-        p = plt.plot(rx, ry)[0]
-        plt.plot(rx[0],ry[0],'-o',color=p.get_color(), label=f'{self.name} at {start}MJD')
+        # plot in 2D
+        if dim == 2:
+            p = plt.plot(rx, ry)[0]
+            plt.plot(rx[0],ry[0],'-o',color=p.get_color(), label=f'{self.name} at {start}MJD')
+            plt.xlabel('x [AU]')
+            plt.ylabel('y [AU]')
+
+        # plot in 3D - FXIME!
+        if dim == 3:
+            fig = plt.figure(figsize=(10, 10))
+            ax = fig.add_subplot(111, projection='3d')
+            ax.plot(rx[0],ry[0],rz[0],'-o', label=f'{self.name} at {start}MJD')
+
