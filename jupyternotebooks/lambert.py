@@ -143,7 +143,7 @@ def lambert(mu, r1, r2, tof, grade='pro', method=None, **kwargs):
             F0, Fdot0 = residue_Fz(z0,r1,r2,A)
 
     logging.debug(f'Scipy will use {z0} as z0 initial guess')
-
+    
     # Scipy - solve to find z-value
     #sol = opt.root_scalar(residue_Fz, args=(r1,r2,A), fprime=True, bracket=bracket_window, method=method, **kwargs)
     sol = opt.root_scalar(residue_Fz, args=(r1,r2,A), fprime=True, x0=z0, method=method, **kwargs)
