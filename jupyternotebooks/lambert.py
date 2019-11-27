@@ -1,5 +1,6 @@
-"""Lambert problem solution according to Bate's formulation"""
-# Python implementation by Yuri Shimane
+"""Lambert problem solution according to Bate's formulation
+Python implementation by Yuri Shimane
+"""
 
 
 import numpy as np
@@ -176,7 +177,7 @@ def lambert(mu, r1, r2, tof, grade='pro', method=None, **kwargs):
     logging.info(f'velocity at r2: {v2} [km/s]')
     logging.info('================================================================')
     return v1, v2
-    
+
 
 
 def sv2el(r,v,mu):
