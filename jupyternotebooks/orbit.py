@@ -12,7 +12,7 @@ from memo import memoized
 
 mu = 1.32712440018e11
 day2s = 86400
-AU2km = 1.49697870691e8
+AU2km = 1.49597870691e8
 
 # memoizer to store outputs as they are solved for
 # note that this decorator ignores **kwargs
@@ -24,8 +24,9 @@ def _array2string(x, format):
 
 class Orbit():
 
-    def __init__(self, name, mu=mu):
+    def __init__(self, name=None, mu=mu, index=-2):
 
+        self.index = index
         self.name = name
         self.mu = mu
 
@@ -96,7 +97,11 @@ class Orbit():
 
 
     @memoized
-    def rv(self, epoch, tol=1e-2):
+    def rv(self, epoch=None, tol=1e-2):
+
+        # for ease
+        if epoch is None:
+            return self.r0, self.v0
 
         tof = (epoch - self.epoch0)*day2s
 
@@ -141,11 +146,11 @@ class Orbit():
 
         return s
 
-    def plot(self, start=None, end=None, dim=2, num=100):
+    def plot(self, start=None, end=None, dim=2, num=100, **kwargs):
         """plots orbit in 2D between start and end time, with num points
         Args:
-            start (float): start epoch of orbit to be plotted
-            end (float): end epoch of orbit to be plotted
+            start (float): start epoch of orbit to be plotted (MJD)
+            end (float): end epoch of orbit to be plotted (MJD)
             dim (int): dimension of plot (either 2D or 2D)
             num (int): number of points to construct the orbit
         """
@@ -153,8 +158,11 @@ class Orbit():
         if start is None:
             start = self.epoch0
         if end is None:
-            period = 2*pi*sqrt(self.a**3/self.mu)
-            end = start + period/day2s
+            if self.e > 0.99: #close to parabolic or hyperbolic
+                period = 2*365 # 2 years enforced
+            else:
+                period = (2*pi*sqrt(self.a**3/self.mu))/day2s
+            end = start + period
 
         # period is in days
         # find terminal time by projecting one period, and simulating
@@ -173,7 +181,8 @@ class Orbit():
         # plot in 2D
         if dim == 2:
             p = plt.plot(rx, ry)[0]
-            plt.plot(rx[0],ry[0],'-o',color=p.get_color(), label=f'{self.name} at {start}MJD')
+
+            plt.plot(rx[0],ry[0],'-o',color=p.get_color(), label=f'{start:5.2f}MJD: {self.name}', **kwargs)
             plt.xlabel('x [AU]')
             plt.ylabel('y [AU]')
 
@@ -182,4 +191,3 @@ class Orbit():
             fig = plt.figure(figsize=(10, 10))
             ax = fig.add_subplot(111, projection='3d')
             ax.plot(rx[0],ry[0],rz[0],'-o', label=f'{self.name} at {start}MJD')
-
