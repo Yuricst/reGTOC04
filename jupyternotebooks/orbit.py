@@ -13,6 +13,8 @@ from memo import memoized
 mu = 1.32712440018e11
 day2s = 86400
 AU2km = 1.49597870691e8
+ISP = 3000*9.80665
+
 
 # memoizer to store outputs as they are solved for
 # note that this decorator ignores **kwargs
