@@ -100,6 +100,9 @@ class Orbit():
 
     @memoized
     def rv(self, epoch=None, tol=1e-2):
+        """Propagate orbit forward in time with Kepler's equation"""
+        # memoize: if all arguments to rv() is the same as sometime before, it will return previsouly computed value
+        # >>> may be handy when times between subsequent nodes overlap
 
         # for ease
         if epoch is None:
@@ -125,7 +128,8 @@ class Orbit():
 
         coe = [self.h, self.e, self.LAN, self.inc, self.argp, trueAnom]
 
-        return el.coe2rv(self.mu, *coe)
+        return el.coe2rv(self.mu, *coe) # returns the state-vector at new trueAnom (and new Epoch)
+
 
     def __repr__(self):
 

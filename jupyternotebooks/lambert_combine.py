@@ -29,9 +29,10 @@ def lambert(*args):
 		return lambert_izzo(*args)
 	except:
 		try:
+			# insert counter for number of times izzo algorithm has been diverted?
 			return lambert_bate(*args)
 		except:
-			raise RunTimeError('Failed to solve Lamberts')
+			raise RunTimeError('Failed to solve Lambert\'s problem')
 
 
 # -------------------- BATE'S FORMULATION -------------------- #
