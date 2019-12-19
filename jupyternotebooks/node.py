@@ -293,24 +293,27 @@ class Node():
 
         return f'{self.parent_node.history()}\n{self}'
 
-    def plot(self, only_traj=False):
+    def plot(self, only_traj=False, ax=None):
+
+        if not ax:
+            ax = plt.gca()
 
         if self.parent_node is None:
-            plt.plot(0,0,'xy')
-            plt.grid()
-            ax=plt.gca()
+            ax.plot(0,0,'xy')
+            ax.grid()
             ax.set_aspect(1)
 
         else:
-            self.parent_node.plot(only_traj)
+            self.parent_node.plot(only_traj, ax)
 
         if not only_traj:
             #plot orbit of current asteroid,
-            self.asteroid.plot(start=self.epoch)
+            line_opts = {'alpha':0.5, 'linestyle':':'}
+            self.asteroid.plot(start=self.epoch, ax=ax, **line_opts)
 
         (rx, ry, rz), v = self.asteroid.rv(self.epoch)
-        plt.text(rx/AU2km,ry/AU2km, f'{self.len_of_chain()}')
+        ax.text(rx/AU2km,ry/AU2km, f'{self.len_of_chain()}')
 
         #plot current approach trajectory
         if self.parent_node is not None:
-            self.approach_orbit.plot(start=self.parent_node.epoch, end=self.epoch)
+            self.approach_orbit.plot(start=self.parent_node.epoch, end=self.epoch, ax=ax)
