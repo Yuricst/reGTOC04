@@ -181,7 +181,7 @@ def lambert(mu, r1, r2, tof, grade='pro', method=None, **kwargs):
 
 
 def sv2el(r,v,mu):
-    """function converts state-vector to orbital elements
+    """function converts state-vector to orbital elements for e<1 orbits
         Args:
         r (lst): position vector [km]
         v (lst): velocity vector [km]
