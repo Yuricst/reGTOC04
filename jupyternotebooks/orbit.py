@@ -13,7 +13,8 @@ from memo import memoized
 mu = 1.32712440018e11
 day2s = 86400
 AU2km = 1.49597870691e8
-ISP = 3000*9.80665
+ISP = 3000
+g0 = 9.80665
 
 
 # memoizer to store outputs as they are solved for
@@ -152,7 +153,7 @@ class Orbit():
 
         return s
 
-    def plot(self, start=None, end=None, dim=2, num=100, **kwargs):
+    def plot(self, start=None, end=None, dim=2, num=100, ax=None, **kwargs):
         """plots orbit in 2D between start and end time, with num points
         Args:
             start (float): start epoch of orbit to be plotted (MJD)
@@ -160,6 +161,9 @@ class Orbit():
             dim (int): dimension of plot (either 2D or 2D)
             num (int): number of points to construct the orbit
         """
+
+        if not ax:
+            ax = plt.gca()
 
         if start is None:
             start = self.epoch0
@@ -186,11 +190,11 @@ class Orbit():
 
         # plot in 2D
         if dim == 2:
-            p = plt.plot(rx, ry)[0]
+            p = ax.plot(rx, ry, **kwargs)[0]
 
-            plt.plot(rx[0],ry[0],'-o',color=p.get_color(), label=f'{start:5.2f}MJD: {self.name}', **kwargs)
-            plt.xlabel('x [AU]')
-            plt.ylabel('y [AU]')
+            ax.plot(rx[0],ry[0],'-o',color=p.get_color(), label=f'{start:5.2f}MJD: {self.name}', **kwargs)
+            ax.set_xlabel('x [AU]')
+            ax.set_ylabel('y [AU]')
 
         # plot in 3D - FXIME!
         if dim == 3:

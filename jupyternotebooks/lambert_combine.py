@@ -1,5 +1,5 @@
 """Combined Lambert solver
-Prioritizes Dario Izzo's formulation. 
+Prioritizes Dario Izzo's formulation.
 If failed to converge, switch to Bate's formulation.
 If one of the method is to be used, directly call:
 	lambert_izzp(*args) or
@@ -23,7 +23,7 @@ from mpl_toolkits.mplot3d import axes3d
 # -------------------- PRIMARY FUNCTION -------------------- #
 # tool to use izzo and Bate lambert algorithm
 def lambert(*args):
-	"""Function uses Izzo's formulation to solve Lambert problem. If it doesn't converge, function switches to Bate's formulation. 
+	"""Function uses Izzo's formulation to solve Lambert problem. If it doesn't converge, function switches to Bate's formulation.
 	"""
 	try:
 		return lambert_izzo(*args)
@@ -47,12 +47,16 @@ def _Stumpff_S(z):
 	"""
 	if z > 0:
 		S = (np.sqrt(z) - np.sin(np.sqrt(z)))/np.power(z,1.5)
+
+		return S
 	elif z == 0:
 		S = 1/6
+
+		return S
 	elif z < 0:
 		S = (np.sinh(np.sqrt(-z)) - np.sqrt(-z))/np.power(-z,1.5)
 
-	return S
+		return S
 
 def _Stumpff_C(z):
 	"""
@@ -137,12 +141,14 @@ def lambert(mu, r1, r2, tof, grade='pro', method=None, **kwargs):
 		Returns:
 			(tuple): tuple containing residue of F computed at z and Fdot eq. (5.43)
 		"""
+
 		residue = np.power(_y_538(r1,r2,A,z)/_Stumpff_C(z), 3/2) * _Stumpff_S(z) + A*np.sqrt(_y_538(r1,r2,A,z)) - np.sqrt(mu)*tof
 
 		if z == 0:
 			Fdot = np.sqrt(2) * np.power(_y_538(r1,r2,A,0),1.5)/40 + (A/8)*(np.sqrt(_y_538(r1,r2,A,0)) + A*np.sqrt(1/(2*_y_538(r1,r2,A,0))))
 		else:
 			Fdot = np.power(_y_538(r1,r2,A,z)/_Stumpff_C(z), 1.5) * (((1/(2*z)) * (_Stumpff_C(z) - 3*_Stumpff_S(z)/(2*_Stumpff_C(z)))) + 3*np.power(_Stumpff_S(z),2)/(4*_Stumpff_C(z))) + (A/8)*(3*_Stumpff_S(z)*np.sqrt(_y_538(r1,r2,A,z))/_Stumpff_C(z) + A*np.sqrt(_Stumpff_C(z)/_y_538(r1,r2,A,z)))
+
 
 		return residue, Fdot
 
